@@ -1,65 +1,43 @@
+from markets.skinport import getSkinportPrice
+from markets.lootfarm import getLootFarmPrice
+from markets.swap import getSwapPrice
+from markets.buff import Buff
+from flask import Flask, render_template, request
+import pandas as pd
 import json
-import csv
-import time
-import random
-import config
-import requests
 
+with open("config.json", "r") as f:
+    config = json.load(f)
 
-class BuffParser:
-    def __init__(self):
-        self.sale = False
+app = Flask(__name__)
+app.config['SECRET_KEY'] = "nameSecret"
 
-    def start(self):
-        for url in config.URLS:
-            page = 1
-            response = self.get_response(url, page)
-            products = response['data']['items']
-            while page < response['data']['total_page']:
-                page += 1
-                products.extend(self.get_response(url, page)['data']['items'])
-            data_parsed = self.parse_products(products)
-            self.export_to_csv(data_parsed)
+@app.route('/',methods=['GET','POST'])
+def mainpage():
+    skins = pd.read_csv('csv/csSkins.csv') # rustSkins.csv для раста
+    results = []    
+    error = ""
+    if request.method == 'POST':
+        skin = str(request.form.get('skinName'))
+        if(skin):
+            try:
+                sp = getSkinportPrice(skin)
+                buff = b.getBuffPrice(skin)
+                lf = getLootFarmPrice(skin)
+                sw = getSwapPrice(skin)
+                afterFees = round((buff * 0.975),2) # С учётом комиссии Buff
+                profit = round(afterFees - lf,2)
+                gain = round((profit / lf) * 100,6)
+                results = [skin, '$'+str(sp), '$'+str(buff), '$'+str(afterFees), '$'+str(profit), str(gain)+'%', '$'+str(lf), '$'+str(sw)]
+            except:
+                error = "Prices can't be found, try another skin"
+        else:
+            error = "Please enter a value"
+    return render_template('index.html',skinNames=skins.skinNames.values.tolist(), results = results, error = error)
 
-    def get_response(self, url, page):
-        while True:
-            params = config.PARAMS
-            if 'buying' not in url:
-                self.sale = True
-                params['use_suggestion'] = '0'
-                params['trigger'] = 'undefined_trigger'
-            else:
-                self.sale = False
-            params['page_num'] = page
-            response = requests.get(url, params=params, cookies=config.COOKIES, headers=config.HEADERS)
-            if response.status_code == 200:
-                print(f'Parsing: {response.url}')
-                return json.loads(response.text)
-            time.sleep(random.randrange(5, 10))
+if(config["Cookies"] == ""):
+    print("enter cookie in config.json")
+else:
+    b = Buff(config["Cookies"])
+    app.run()
 
-    def parse_products(self, products: list):
-        all_data = []
-        for product in products:
-            temp = []
-            temp.append(product['market_hash_name'])
-            if self.sale:
-                temp.append(f"https://buff.163.com/goods/{product['id']}?from=market#tab=selling")
-            else:
-                temp.append(f"https://buff.163.com/goods/{product['id']}?from=market#tab=buying")
-            all_data.append(temp)
-            print(f'Parsed: {temp}')
-        return all_data
-
-    def export_to_csv(self, data_parsed):
-        csv_header = ['name', 'url']
-        name = 'purchase.csv'
-        if self.sale:
-            name = 'sale.csv'
-        with open(name, 'w', encoding='utf-8') as file:
-            writer = csv.writer(file)
-            writer.writerow(csv_header)
-            writer.writerows(data_parsed)
-
-
-if __name__ == '__main__':
-    BuffParser().start()

@@ -1,0 +1,38 @@
+input[type=text] {
+    width: 20%;
+    box-sizing: border-box;
+    margin-left: .4em;
+    margin-right: 1em;
+    margin-bottom: 2em;
+}
+input[type=submit]{
+    cursor: pointer;
+    padding: 1px 30px;
+
+}
+
+
+#form {
+    margin-top: 2em;
+    margin-left: 3em;
+}
+
+#results {
+    margin-top: .1em;
+    margin-left: 3em;
+    margin-bottom: 1em;
+}
+
+#title {
+    margin-left: 1em;
+}
+
+body {
+    font-family:'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+    background: no-repeat right url("https://sun9-15.userapi.com/impg/4bIdS3iNgt_G-2Xenfds2aatr-VYczq_F6QxLw/qpGOthpmsfM.jpg?size=604x337&quality=96&sign=5e5ed50b1205b1cfbf0e4d9e30b3e53f&type=album");
+    background-size: 50%;
+}
+
+#error {
+    color: red;
+}
